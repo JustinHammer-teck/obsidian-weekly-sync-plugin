@@ -1,0 +1,27 @@
+{
+  "packageManager": "pnpm@9.5.0+sha512.140036830124618d624a2187b50d04289d5a087f326c9edfc0ccd733d76c4f52c3a313d4fc148794a2a9d81553016004e6742e8cf850670268a7387fc220c903",
+  "name": "obsidian-vue-plugin",
+  "version": "0.1.0",
+  "description": "This is a sample plugin for Obsidian (https://obsidian.md) with Vue 3",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "keywords": [
+    "obsidian",
+    "vue",
+    "vite"
+  ],
+  "author": "Eugene Nguyen <nguyendinhnhattai.work@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "vue": "^3.0.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^1.2.3",
+    "@vue/compiler-sfc": "^3.0.8",
+    "obsidian": "latest",
+    "vite": "^2.3.8"
+  }
+}
