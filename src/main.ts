@@ -1,7 +1,7 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { createApp } from 'vue'
+import '../style.css'
+import App from './App.vue'
 
 // Remember to rename these classes and interfaces!
 
