@@ -16,6 +16,7 @@
   "author": "Eugene Nguyen <nguyendinhnhattai.work@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "tslib": "^2.6.3",
     "vue": "^3.0.8"
   },
   "devDependencies": {

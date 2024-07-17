@@ -19,6 +19,7 @@
 
         shellHook = ''
           echo "hello to javascript dev shell"  
+          pnpm i 
         '';
       };
     };
