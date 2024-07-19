@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import Counter from './components/Counter.vue'
-
+import Counter from "./components/Counter.vue";
 </script>
 
 <template>
-  <Counter msg="Hello world" />
+  <Counter msg="Hello world from obsidian plugin" />
 </template>
 
 <style scoped>

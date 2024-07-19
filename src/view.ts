@@ -4,23 +4,27 @@ import App from "./App.vue";
 
 export const VIEW_TYPE: string = "my-view";
 
-export class MyView extends ItemView {
+export class ObsidianWeekSyncView extends ItemView {
   vueapp: VueApp;
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
   }
+
   getViewType(): string {
     return VIEW_TYPE;
   }
+
   getDisplayText(): string {
     return "Vue Stater";
   }
-  getIcon(): string {
-    return "dice";
+
+  static getIcon(): string {
+    return "tent-tree";
   }
   async onOpen() {
-    const container = this.containerEl.children[1];
+    const container = this.containerEl;
     container.empty();
+
     let content = container.createEl("div", {
       cls: "my-plugin-view",
     });

@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 const props = defineProps<{
-  msg: int
+  msg: number;
 }>();
 
-const count = ref<number>(0);
+const count = ref(0);
 
 const increment = () => {
-  count++;
+  count.value++;
 };
-
 </script>
 
 <template>
   <div class="counter">
     <h1>Counter</h1>
-    <p>Count : {{ count }}</p>
-    <button v-on:click="increment"></button>
+    <p>{{ msg }}</p>
+    <button type="button" @click="increment">count is {{ count }}</button>
   </div>
 </template>
