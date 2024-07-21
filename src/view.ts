@@ -18,9 +18,10 @@ export class ObsidianWeekSyncView extends ItemView {
     return "Vue Stater";
   }
 
-  static getIcon(): string {
+  getIcon(): string {
     return "tent-tree";
   }
+
   async onOpen() {
     const container = this.containerEl;
     container.empty();

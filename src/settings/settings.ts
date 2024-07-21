@@ -1,7 +1,7 @@
 import { App as ObsidianApp, Setting, PluginSettingTab } from "obsidian";
-import ObsidianWeeklySync from "./main";
+import ObsidianWeeklySync from "../main";
 
-export default class ObsidianWeeklySyncSettingTab extends PluginSettingTab {
+export default class SettingTab extends PluginSettingTab {
   plugin: ObsidianWeeklySync;
 
   constructor(app: ObsidianApp, plugin: ObsidianWeeklySync) {
