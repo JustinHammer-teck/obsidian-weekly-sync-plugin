@@ -1,170 +1,154 @@
 import {
-  App as ObsidianApp,
+  Plugin,
   Editor,
   MarkdownView,
+  MarkdownPostProcessorContext,
+  Setting,
   Modal,
-  Notice,
-  Plugin,
-  Menu,
+  App,
+  debounce,
+  EditorPosition,
 } from "obsidian";
 
-import { ObsidianWeekSyncView, VIEW_TYPE } from "./view";
-import SettingTab from "./settings/settings";
-
-// Remember to rename these classes and interfaces!
-interface PluginSettings {
-  pluginSetting: string;
+interface HighlightComment {
+  comment: string;
+  sourcePath: string;
+  position: {
+    start: { line: number; ch: number };
+    end: { line: number; ch: number };
+  };
+  text: string;
 }
 
-const DEFAULT_SETTINGS: PluginSettings = {
-  pluginSetting: "default",
-};
+class CommentModal extends Modal {
+  comment: string;
+  onSubmit: (result: string) => void;
 
-export default class ObsidianWeeklySync extends Plugin {
-  settings: PluginSettings;
-
-  async onload() {
-    await this.loadSettings();
-
-    // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-    const statusBarItemEl = this.addStatusBarItem();
-    statusBarItemEl.setText("Status Bar Text");
-
-    this.registerView(VIEW_TYPE, (leaf) => new ObsidianWeekSyncView(leaf));
-
-    this.addRibbonIcon("tent-tree", "Weekly View", (evt) => {
-      this.activateView();
-    });
-
-    // This adds a simple command that can be triggered anywhere
-    this.addCommand({
-      id: "open-sample-modal-simple",
-      name: "Open sample modal (simple)",
-      callback: () => {
-        new PluginModal(this.app).open();
-      },
-    });
-
-    // This adds an editor command that can perform some operation on the current editor instance
-    this.addCommand({
-      id: "sample-editor-command",
-      name: "Sample editor command",
-      editorCallback: (editor: Editor, view: MarkdownView) => {
-        console.log(editor.getSelection());
-        editor.replaceSelection("Sample Editor Command");
-      },
-    });
-
-    // This adds a complex command that can check whether the current state of the app allows execution of the command
-    this.addCommand({
-      id: "open-sample-modal-complex",
-      name: "Open sample modal (complex)",
-      checkCallback: (checking: boolean) => {
-        // Conditions to check
-
-        const markdownView =
-          this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (markdownView) {
-          // If checking is true, we're simply "checking" if the command can be run.
-          // If checking is false, then we want to actually perform the operation.
-          if (!checking) {
-            new PluginModal(this.app).open();
-          }
-
-          // This command will only show up in Command Palette when the check function returns true
-          return true;
-        }
-      },
-    });
-
-    // This adds a settings tab so the user can configure various aspects of the plugin
-    this.addSettingTab(new SettingTab(this.app, this));
-
-    // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-    // Using this function will automatically remove the event listener when this plugin is disabled.
-    this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-      console.log("click", evt);
-      const activeLeaf = this.app.workspace.getLeaf();
-      if (activeLeaf && activeLeaf.view instanceof MarkdownView) {
-        const editor = activeLeaf.view.editor;
-
-        // Get the current selection
-        const selection = editor.getSelection();
-
-        // Print the selected text to the console
-        console.log("Selected Text:", selection);
-      }
-    });
-
-    this.addContextMenu();
-
-    // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-    this.registerInterval(
-      window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000),
-    );
-  }
-
-  onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
-  }
-
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-  }
-
-  async saveSettings() {
-    await this.saveData(this.settings);
-  }
-
-  async activateView() {
-    if (this.app.workspace.getLeavesOfType(VIEW_TYPE).length === 0) {
-      await this.app.workspace.getRightLeaf(false).setViewState({
-        type: VIEW_TYPE,
-        active: true,
-      });
-    }
-
-    this.app.workspace.revealLeaf(
-      this.app.workspace.getLeavesOfType(VIEW_TYPE)[0],
-    );
-  }
-
-  addContextMenu() {
-    this.registerEvent(
-      this.app.workspace.on("editor-menu", (menu, editor, view) => {
-        // Add a custom menu item
-        menu.addItem((item) => {
-          item
-            .setTitle("Custom Action")
-            .setIcon("dice")
-            .onClick(() => {
-              // Get the cursor position
-              const cursor = editor.getCursor();
-              console.log("Custom Action Clicked at:", cursor);
-
-              // Perform your custom action here
-              const selection = editor.getSelection();
-              console.log("Selected Text:", selection);
-              // Add your action here
-            });
-        });
-      }),
-    );
-  }
-}
-
-class PluginModal extends Modal {
-  constructor(app: ObsidianApp) {
+  constructor(app: App, onSubmit: (result: string) => void) {
     super(app);
+    this.onSubmit = onSubmit;
   }
 
   onOpen() {
     const { contentEl } = this;
-    contentEl.setText("Woah!");
+    contentEl.createEl("h2", { text: "Enter your comment" });
+
+    new Setting(contentEl).setName("Comment").addText((text) =>
+      text.onChange((value) => {
+        this.comment = value;
+      }),
+    );
+
+    new Setting(contentEl).addButton((btn) =>
+      btn
+        .setButtonText("Submit")
+        .setCta()
+        .onClick(() => {
+          this.close();
+          this.onSubmit(this.comment);
+        }),
+    );
   }
 
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+  }
+}
+export default class HighlightCommentPlugin extends Plugin {
+  async onload() {
+    this.addCommand({
+      id: "add-highlight-comment",
+      name: "Add Highlight and Comment",
+      editorCallback: async (editor: Editor, view: MarkdownView) => {
+        const selection = editor.getSelection();
+        if (selection) {
+          const from = editor.getCursor("from");
+          const to = editor.getCursor("to");
+          new CommentModal(this.app, async (comment) => {
+            if (comment) {
+              await this.saveHighlightComment(
+                comment,
+                view.file.path,
+                from,
+                to,
+                selection,
+              );
+
+              // We no longer insert a signature in the markdown
+              editor.replaceSelection(selection);
+            }
+          }).open();
+        }
+      },
+    });
+
+    this.registerMarkdownPostProcessor(this.debounced.bind(this));
+  }
+
+  async loadHighlightComments(): Promise<HighlightComment[]> {
+    try {
+      const data = await this.app.vault.adapter.read(
+        ".obsidian/plugins/obsidian-weekly-sync/data.json",
+      );
+      console.log(data);
+      return JSON.parse(data) || []; // Return an empty array if parsing results in null or undefined
+    } catch (error) {
+      console.log("Error loading highlight comments:", error);
+      return []; // Return an empty array if file doesn't exist or there's an error
+    }
+  }
+
+  async saveHighlightComment(
+    comment: string,
+    sourcePath: string,
+    from: EditorPosition,
+    to: EditorPosition,
+    text: string,
+  ): Promise<void> {
+    let highlightComments = await this.loadHighlightComments();
+
+    if (!Array.isArray(highlightComments)) {
+      highlightComments = [];
+    }
+
+    highlightComments.push({
+      comment,
+      sourcePath,
+      position: { start: from, end: to },
+      text,
+    });
+
+    try {
+      await this.app.vault.adapter.write(
+        ".obsidian/plugins/obsidian-weekly-sync/data.json",
+        JSON.stringify(highlightComments, null, 2),
+      );
+    } catch (error) {
+      console.error("Error saving highlight comment:", error);
+    }
+  }
+
+  debounced = debounce(function () {
+    this.postProcessor();
+  }, 1000);
+
+  async postProcessor() {
+    let active_leaf = this.app.workspace.getActiveFile();
+    if (active_leaf) {
+      let page_content = await this.app.vault.read(active_leaf);
+      // Convert into HTML element
+      let page_html = document.createElement("Div");
+      page_html.innerHTML = page_content;
+      // Use HTML parser to find the desired elements
+      // Get all .ob-comment elements
+      const highlightComments = await this.loadHighlightComments();
+
+      let comment_list = page_html
+        .querySelectorAll<HTMLElement>("hl-comment")
+        .forEach((hlEl) => {
+          console.log(hlEl);
+        });
+    }
   }
 }
