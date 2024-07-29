@@ -1,5 +1,5 @@
 import { App as ObsidianApp, Setting, PluginSettingTab } from "obsidian";
-import ObsidianWeeklySync from "../main";
+import ObsidianWeeklySync from "@/HighlightCommentPlugin";
 
 export default class SettingTab extends PluginSettingTab {
   plugin: ObsidianWeeklySync;
