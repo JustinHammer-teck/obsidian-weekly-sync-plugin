@@ -83,13 +83,6 @@ export default class HighlightCommentPlugin extends Plugin {
             if (comment) {
               const replacement = `<highlighter>${selection}</highlighter><hglt-comment>${comment}</hglt-comment>`;
               editor.replaceSelection(replacement);
-
-              // Store the comment
-              // this.commentStorage.addComment(view.file, {
-              //   text: comment,
-              //   start: editor.posToOffset(editor.getCursor("from")),
-              //   end: editor.posToOffset(editor.getCursor("to")),
-              // });
             }
           }).open();
         } else {
@@ -98,94 +91,69 @@ export default class HighlightCommentPlugin extends Plugin {
       },
     });
 
-    // Register events to trigger rendering
-    //   this.registerEvent(
-    //     this.app.workspace.on("quick-preview", this.triggerRender),
-    //   );
-    //   this.registerEvent(this.app.workspace.on("file-open", this.triggerRender));
-    //   this.registerEvent(
-    //     this.app.workspace.on("layout-change", this.triggerRender),
-    //   );
-    this.refresh();
+    const style = document.createElement("style");
+    style.id = "my-plugin-styles";
+    style.textContent = `
+            .ob-wk-sync {
+                position: relative;
+                display: inline;
+                cursor: pointer;
+                background-color: rgba(255, 200, 200, 0.3);
+                padding: 2px 0;
+                border-radius: 3px;
+                transition: background-color 0.3s ease;
+                box-decoration-break: clone;
+                -webkit-box-decoration-break: clone;
+            }
+
+            .ob-wk-sync:hover {
+                background-color: rgba(255, 200, 200, 0.5);
+            }
+
+            .ob-wk-sync input[type="checkbox"] {
+                display: none;
+            }
+
+            .ob-wk-sync span {
+                visibility: hidden;
+                width: 200px;
+                background-color: #555;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 5px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                margin-left: -100px;
+                opacity: 0;
+                transition: opacity 0.3s, visibility 0.3s;
+            }
+
+            .ob-wk-sync span::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #555 transparent transparent transparent;
+            }
+
+            .ob-wk-sync input[type="checkbox"]:checked ~ span {
+                visibility: visible;
+                opacity: 1;
+            }
+        `;
+    document.head.appendChild(style);
   }
 
-  refresh = () => {
-    this.updateDocumentBody();
-  };
-
-  updateDocumentBody = () => {
-    document.body.classList.toggle("obsidian-wk-sync", true);
-  };
-
-  triggerRender = () => {
-    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView) {
-      this.renderHighlightsAndComments(activeView);
-    }
-  };
-
-  async renderHighlightsAndComments(view: MarkdownView) {
-    console.log("Rendering");
-    const file = view.file;
-    if (!file) return;
-
-    const content = await this.app.vault.cachedRead(file);
-    const storedComments = this.commentStorage.getComments(file);
-
-    const previewEl = view.previewMode.containerEl;
-    // Process inline highlights and comments
-    const highlightRegex = /%%highlight-start%%([\s\S]*?)%%highlight-end%%/g;
-    const commentRegex = /%%comment-start%%([\s\S]*?)%%comment-end%%/g;
-
-    previewEl.innerHTML = previewEl.innerHTML.replace(
-      highlightRegex,
-      (match, p1) => {
-        return `<span class="custom-highlight">${p1}</span>`;
-      },
-    );
-
-    previewEl.innerHTML = previewEl.innerHTML.replace(
-      commentRegex,
-      (match, p1) => {
-        return `<span class="custom-comment">${p1}</span>`;
-      },
-    );
-
-    // Process stored comments
-    const doc = new DOMParser().parseFromString(
-      previewEl.innerHTML,
-      "text/html",
-    );
-    const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-
-    let node;
-    let offset = 0;
-    while ((node = walker.nextNode())) {
-      const text = node.textContent;
-      for (const comment of storedComments) {
-        if (offset <= comment.start && comment.end <= offset + text.length) {
-          const range = document.createRange();
-          range.setStart(node, comment.start - offset);
-          range.setEnd(node, comment.end - offset);
-
-          const span = document.createElement("span");
-          span.className = "custom-highlight";
-          range.surroundContents(span);
-
-          const commentIcon = document.createElement("span");
-          commentIcon.className = "custom-comment-icon";
-          commentIcon.textContent = "💬";
-          commentIcon.title = comment.text;
-          span.appendChild(commentIcon);
-
-          walker.currentNode = span;
-          break;
-        }
-      }
-      offset += text.length;
-    }
-
-    previewEl.innerHTML = doc.body.innerHTML;
+  onunload() {
+    // Remove the CSS when the plugin is disabled
+    const style = document.getElementById("my-plugin-styles");
+    if (style) style.remove();
   }
 }
 
