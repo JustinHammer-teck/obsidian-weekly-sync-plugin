@@ -81,7 +81,7 @@ export default class HighlightCommentPlugin extends Plugin {
         if (selection) {
           new CommentModal(this.app, selection, (comment) => {
             if (comment) {
-              const replacement = `<highlighter>${selection}</highlighter><hglt-comment>${comment}</hglt-comment>`;
+              const replacement = `<label class="ob-wk-sync">${selection}<input type="checkbox"><span>${comment}</span> </label>`;
               editor.replaceSelection(replacement);
             }
           }).open();
@@ -90,77 +90,13 @@ export default class HighlightCommentPlugin extends Plugin {
         }
       },
     });
-
-    const style = document.createElement("style");
-    style.id = "my-plugin-styles";
-    style.textContent = `
-            .ob-wk-sync {
-                position: relative;
-                display: inline;
-                cursor: pointer;
-                background-color: rgba(255, 200, 200, 0.3);
-                padding: 2px 0;
-                border-radius: 3px;
-                transition: background-color 0.3s ease;
-                box-decoration-break: clone;
-                -webkit-box-decoration-break: clone;
-            }
-
-            .ob-wk-sync:hover {
-                background-color: rgba(255, 200, 200, 0.5);
-            }
-
-            .ob-wk-sync input[type="checkbox"] {
-                display: none;
-            }
-
-            .ob-wk-sync span {
-                visibility: hidden;
-                width: 200px;
-                background-color: #555;
-                color: #fff;
-                text-align: center;
-                border-radius: 6px;
-                padding: 5px;
-                position: absolute;
-                z-index: 1;
-                bottom: 125%;
-                left: 50%;
-                margin-left: -100px;
-                opacity: 0;
-                transition: opacity 0.3s, visibility 0.3s;
-            }
-
-            .ob-wk-sync span::after {
-                content: "";
-                position: absolute;
-                top: 100%;
-                left: 50%;
-                margin-left: -5px;
-                border-width: 5px;
-                border-style: solid;
-                border-color: #555 transparent transparent transparent;
-            }
-
-            .ob-wk-sync input[type="checkbox"]:checked ~ span {
-                visibility: visible;
-                opacity: 1;
-            }
-        `;
-    document.head.appendChild(style);
-  }
-
-  onunload() {
-    // Remove the CSS when the plugin is disabled
-    const style = document.getElementById("my-plugin-styles");
-    if (style) style.remove();
   }
 }
 
 class CommentStorage {
   private plugin: Plugin;
   private comments: { [filePath: string]: CommentData[] } = {};
-  private storageFile: string = ".obsidian/plugin-comments.json";
+  private storageFile: string = "";
 
   constructor(plugin: Plugin) {
     this.plugin = plugin;
